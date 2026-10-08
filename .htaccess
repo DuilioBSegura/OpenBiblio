@@ -1,0 +1,63 @@
+# ====================================================================
+# OpenBiblio - Configurações de Segurança e Otimização do Apache
+# ====================================================================
+
+# 1. Desativar listagem visual de diretórios (Directory Browsing)
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Bloquear qualquer tentativa de acesso ao diretório .git ou subdiretórios
+    RewriteRule (^|/)\. - [F,L]
+</IfModule>
+
+# 2. Impedir acesso a arquivos e pastas sensíveis
+<FilesMatch "(^\.|\.(sql|log|md|bak|config|env))$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 3. Headers de Segurança HTTP (OWASP Recommended)
+<IfModule mod_headers.c>
+    # Proteção contra Clickjacking (impede renderização em iframes de outros domínios)
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # Proteção contra MIME-type Sniffing
+    Header set X-Content-Type-Options "nosniff"
+
+    # Controle de Referrer
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Restrição de APIs de hardware desnecessárias
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    # Content Security Policy (permite assets locais e CDNs do Bootstrap/Chart.js)
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self';"
+
+    # Remover cabeçalho de tecnologia do servidor
+    Header unset X-Powered-By
+</IfModule>
+
+# 4. Compactação Gzip para Assets Estáticos (Performance)
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# 5. Caching de Assets Estáticos no Navegador
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+</IfModule>

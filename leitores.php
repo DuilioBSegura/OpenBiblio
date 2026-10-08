@@ -131,9 +131,11 @@ include __DIR__ . '/includes/header.php';
                                         <a href="leitor_editar.php?id=<?= $leitor['id'] ?>" class="btn btn-outline-primary" title="Editar Leitor">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirLeitor<?= $leitor['id'] ?>" title="Excluir/Inativar">
-                                            <i class="bi bi-person-x"></i>
-                                        </button>
+                                        <?php if (isAdmin()): ?>
+                                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirLeitor<?= $leitor['id'] ?>" title="Excluir/Inativar (Admin)">
+                                                <i class="bi bi-person-x"></i>
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

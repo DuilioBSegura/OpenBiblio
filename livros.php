@@ -166,9 +166,11 @@ include __DIR__ . '/includes/header.php';
                                         <a href="livro_editar.php?id=<?= $livro['id'] ?>" class="btn btn-outline-primary" title="Editar Livro">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirLivro<?= $livro['id'] ?>" title="Excluir ou Inativar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <?php if (isAdmin()): ?>
+                                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirLivro<?= $livro['id'] ?>" title="Excluir ou Inativar (Admin)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

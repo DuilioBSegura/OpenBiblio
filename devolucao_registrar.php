@@ -94,7 +94,8 @@ try {
         $db->rollBack();
     }
     error_log("Erro na transação de devolução: " . $e->getMessage());
-    setFlashMessage('danger', "Falha ao registrar devolução: " . $e->getMessage());
+    $userMsg = ($e instanceof PDOException) ? 'Erro interno no banco de dados.' : $e->getMessage();
+    setFlashMessage('danger', "Falha ao registrar devolução: " . $userMsg);
     header('Location: emprestimos.php');
     exit;
 }

@@ -27,6 +27,29 @@ if (empty($email) || empty($senha)) {
 
 try {
     $db = getDBConnection();
+
+    // 1. Verificação de Bloqueio por Força Bruta (Rate Limiting)
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    $timeLimitMinutes = 15;
+    $maxAttempts = 5;
+
+    $stmtThrottle = $db->prepare("
+        SELECT COUNT(*) 
+        FROM logs_sistema 
+        WHERE acao = 'LOGIN_FALHA' 
+          AND (ip = ? OR detalhes LIKE ?) 
+          AND criado_em >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+    ");
+    $stmtThrottle->execute([$ip, "%{$email}%", $timeLimitMinutes]);
+    $failedAttempts = (int) $stmtThrottle->fetchColumn();
+
+    if ($failedAttempts >= $maxAttempts) {
+        auditLog('LOGIN_BLOQUEADO', "Bloqueio temporário ativado para IP {$ip} e e-mail {$email} ({$failedAttempts} tentativas).");
+        setFlashMessage('danger', 'Muitas tentativas incorretas. Seu acesso foi temporariamente bloqueado por 15 minutos para segurança do sistema.');
+        header('Location: login.php');
+        exit;
+    }
+
     $stmt = $db->prepare("SELECT id, nome, email, senha, perfil, ativo FROM usuarios WHERE email = ? LIMIT 1");
     $stmt->execute([$email]);
     $usuario = $stmt->fetch();
@@ -45,6 +68,7 @@ try {
         header('Location: ../index.php');
         exit;
     } else {
+        sleep(1); // Atraso artificial defensivo contra brute-force
         auditLog('LOGIN_FALHA', 'Tentativa frustrada de login para o e-mail: ' . $email);
         setFlashMessage('danger', 'E-mail ou senha incorretos (ou usuário inativo).');
         header('Location: login.php');

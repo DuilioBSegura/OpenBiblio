@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         } catch (Exception $e) {
             error_log("Erro na edição de leitor: " . $e->getMessage());
-            $errors[] = "Erro ao atualizar leitor: " . $e->getMessage();
+            $errors[] = "Erro interno no servidor ao tentar atualizar os dados do leitor.";
         }
     }
 }

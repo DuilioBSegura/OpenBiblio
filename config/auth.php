@@ -5,7 +5,34 @@
  */
 
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.use_strict_mode', '1');
+    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => $isSecure,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     session_start();
+}
+
+// Timeout de inatividade da sessão (30 minutos)
+$sessionTimeout = 1800;
+if (isset($_SESSION['usuario_id']) && isset($_SESSION['last_activity'])) {
+    if (time() - $_SESSION['last_activity'] > $sessionTimeout) {
+        $_SESSION = [];
+        session_destroy();
+        session_start();
+        setFlashMessage('warning', 'Sua sessão expirou por inatividade. Faça login novamente.');
+        header('Location: ' . getAppSubPath() . '/auth/login.php');
+        exit;
+    }
+}
+if (isset($_SESSION['usuario_id'])) {
+    $_SESSION['last_activity'] = time();
 }
 
 require_once __DIR__ . '/database.php';
@@ -20,13 +47,33 @@ function isLoggedIn(): bool {
 }
 
 /**
+ * Verifica se o usuário atual tem perfil de Administrador (RBAC)
+ * 
+ * @return bool
+ */
+function isAdmin(): bool {
+    return isLoggedIn() && (($_SESSION['usuario_perfil'] ?? '') === 'admin');
+}
+
+/**
  * Exige que o usuário esteja logado. Se não estiver, redireciona para a tela de login.
  */
 function requireLogin(): void {
     if (!isLoggedIn()) {
         setFlashMessage('warning', 'Acesso restrito! Por favor, faça login para acessar o sistema.');
-        // Determina a URL relativa para o login
         header('Location: ' . getAppSubPath() . '/auth/login.php');
+        exit;
+    }
+}
+
+/**
+ * Exige perfil de administrador para a ação. Se não for, bloqueia o acesso (RBAC).
+ */
+function requireAdmin(): void {
+    requireLogin();
+    if (!isAdmin()) {
+        setFlashMessage('danger', 'Acesso negado: esta ação requer privilégios de Administrador.');
+        header('Location: ' . getAppSubPath() . '/index.php');
         exit;
     }
 }

@@ -16,7 +16,7 @@ $subPath = getAppSubPath();
     <title><?= htmlspecialchars($pageTitle) ?></title>
     
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Chart.js para Gráficos -->
@@ -54,7 +54,7 @@ $subPath = getAppSubPath();
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="dropdownUser1">
                         <li><a class="dropdown-item" href="<?= $subPath ?>/perfil.php"><i class="bi bi-person me-2"></i> Meu Perfil</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="<?= $subPath ?>/auth/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Sair do Sistema</a></li>
+                        <li><a class="dropdown-item text-danger" href="<?= $subPath ?>/auth/logout.php?csrf_token=<?= generateCsrfToken() ?>"><i class="bi bi-box-arrow-right me-2"></i> Sair do Sistema</a></li>
                     </ul>
                 </div>
             </div>

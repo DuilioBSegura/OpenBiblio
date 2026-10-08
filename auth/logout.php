@@ -4,6 +4,13 @@
  */
 require_once __DIR__ . '/../config/auth.php';
 
+$token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
+if (isLoggedIn() && !verifyCsrfToken($token)) {
+    setFlashMessage('warning', 'Tentativa de encerramento de sessão não autorizada.');
+    header('Location: ../index.php');
+    exit;
+}
+
 if (isLoggedIn()) {
     auditLog('LOGOUT', 'Usuário encerrou a sessão.');
 }

@@ -58,24 +58,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Processamento de Upload de Capa Opcional
+    // Processamento de Upload de Capa Opcional com Validação Rígida
     $nomeCapa = null;
     if (isset($_FILES['capa']) && $_FILES['capa']['error'] === UPLOAD_ERR_OK) {
-        $fileTmpPath = $_FILES['capa']['tmp_name'];
-        $fileName = $_FILES['capa']['name'];
+        $fileTmpPath   = $_FILES['capa']['tmp_name'];
+        $fileName      = $_FILES['capa']['name'];
+        $fileSize      = $_FILES['capa']['size'];
         $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-        if (in_array($fileExtension, $allowedExtensions)) {
-            $uploadFileDir = __DIR__ . '/uploads/capas/';
-            if (!is_dir($uploadFileDir)) {
-                mkdir($uploadFileDir, 0755, true);
-            }
-            $nomeCapa = md5(time() . $fileName) . '.' . $fileExtension;
-            $dest_path = $uploadFileDir . $nomeCapa;
-            move_uploaded_file($fileTmpPath, $dest_path);
-        } else {
+        $allowedMimes      = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if ($fileSize > 2 * 1024 * 1024) {
+            $errors[] = 'A imagem da capa não pode ultrapassar 2MB.';
+        } elseif (!in_array($fileExtension, $allowedExtensions)) {
             $errors[] = 'Formato de imagem inválido para a capa. Utilize JPG, PNG ou WEBP.';
+        } else {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $fileTmpPath);
+            finfo_close($finfo);
+
+            $imageInfo = @getimagesize($fileTmpPath);
+
+            if (!in_array($mimeType, $allowedMimes) || $imageInfo === false) {
+                $errors[] = 'O arquivo enviado não é uma imagem válida.';
+            } else {
+                $uploadFileDir = __DIR__ . '/uploads/capas/';
+                if (!is_dir($uploadFileDir)) {
+                    mkdir($uploadFileDir, 0755, true);
+                }
+                $nomeCapa = bin2hex(random_bytes(16)) . '.' . $fileExtension;
+                $dest_path = $uploadFileDir . $nomeCapa;
+                move_uploaded_file($fileTmpPath, $dest_path);
+            }
         }
     }
 
@@ -123,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             $db->rollBack();
             error_log("Erro ao cadastrar livro: " . $e->getMessage());
-            $errors[] = 'Erro no servidor ao tentar salvar o livro: ' . $e->getMessage();
+            $errors[] = 'Erro interno no servidor ao tentar salvar o livro.';
         }
     }
 }

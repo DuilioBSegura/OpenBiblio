@@ -111,7 +111,8 @@ try {
         $db->rollBack();
     }
     error_log("Erro na transação de empréstimo: " . $e->getMessage());
-    setFlashMessage('danger', "Falha ao registrar empréstimo: " . $e->getMessage());
+    $userMsg = ($e instanceof PDOException) ? 'Erro interno no banco de dados ao salvar empréstimo.' : $e->getMessage();
+    setFlashMessage('danger', "Falha ao registrar empréstimo: " . $userMsg);
     header('Location: emprestimo_novo.php');
     exit;
 }

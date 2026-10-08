@@ -26,6 +26,7 @@ try {
     echo json_encode(['status' => 'success', 'exemplares' => $exemplares]);
     exit;
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log("Erro em api_exemplares: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Erro interno ao consultar exemplares.']);
     exit;
 }

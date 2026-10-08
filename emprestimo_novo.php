@@ -9,12 +9,13 @@ $pageHeaderTitle = 'Concessão de Empréstimo';
 
 $db = getDBConnection();
 
-// Buscar todos os leitores ativos com a contagem de empréstimos ativos
+// Buscar todos os leitores ativos com a contagem de empréstimos ativos via JOIN otimizado
 $stmtLeitores = $db->query("
-    SELECT l.id, l.nome_completo, l.cpf,
-           (SELECT COUNT(*) FROM emprestimos e WHERE e.leitor_id = l.id AND e.status = 'Ativo') AS ativos_count
+    SELECT l.id, l.nome_completo, l.cpf, COUNT(e.id) AS ativos_count
     FROM leitores l
+    LEFT JOIN emprestimos e ON l.id = e.leitor_id AND e.status = 'Ativo'
     WHERE l.ativo = 1
+    GROUP BY l.id, l.nome_completo, l.cpf
     ORDER BY l.nome_completo ASC
 ");
 $leitores = $stmtLeitores->fetchAll();

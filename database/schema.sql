@@ -46,7 +46,8 @@ CREATE TABLE `leitores` (
   `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `atualizado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_leitores_cpf` (`cpf`),
-  INDEX `idx_leitores_nome` (`nome_completo`)
+  INDEX `idx_leitores_nome` (`nome_completo`),
+  INDEX `idx_leitores_ativo` (`ativo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -70,7 +71,8 @@ CREATE TABLE `livros` (
   `atualizado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_livros_titulo` (`titulo`),
   INDEX `idx_livros_autor` (`autor`),
-  INDEX `idx_livros_isbn` (`isbn`)
+  INDEX `idx_livros_isbn` (`isbn`),
+  INDEX `idx_livros_ativo` (`ativo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -124,7 +126,8 @@ CREATE TABLE `devolucoes` (
   `observacoes` TEXT NULL,
   `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_devolucoes_emprestimo` FOREIGN KEY (`emprestimo_id`) REFERENCES `emprestimos` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_devolucoes_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT `fk_devolucoes_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  INDEX `idx_devolucoes_data` (`data_devolucao_real`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

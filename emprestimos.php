@@ -179,10 +179,12 @@ include __DIR__ . '/includes/header.php';
                                                 <i class="bi bi-arrow-repeat"></i> Renovar
                                             </button>
 
-                                            <!-- Botão Cancelar -->
-                                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalCancelarEmp<?= $emp['id'] ?>" title="Cancelar Empréstimo">
-                                                <i class="bi bi-x-circle"></i>
-                                            </button>
+                                            <!-- Botão Cancelar (Apenas Admin) -->
+                                            <?php if (isAdmin()): ?>
+                                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalCancelarEmp<?= $emp['id'] ?>" title="Cancelar Empréstimo (Admin)">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>

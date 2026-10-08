@@ -3,6 +3,7 @@
  * OpenBiblio - Cancelamento Transacional de Empréstimo
  */
 require_once __DIR__ . '/includes/auth_check.php';
+requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: emprestimos.php');
@@ -64,7 +65,7 @@ try {
         $db->rollBack();
     }
     error_log("Erro ao cancelar empréstimo: " . $e->getMessage());
-    setFlashMessage('danger', "Erro no servidor ao cancelar empréstimo: " . $e->getMessage());
+    setFlashMessage('danger', "Erro interno no servidor ao cancelar empréstimo.");
     header('Location: emprestimos.php');
     exit;
 }

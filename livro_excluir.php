@@ -3,6 +3,7 @@
  * OpenBiblio - Exclusão / Inativação Segura de Livros (RN-05)
  */
 require_once __DIR__ . '/includes/auth_check.php';
+requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: livros.php');
@@ -80,7 +81,7 @@ try {
         $db->rollBack();
     }
     error_log("Erro ao excluir livro: " . $e->getMessage());
-    setFlashMessage('danger', "Erro ao processar exclusão: " . $e->getMessage());
+    setFlashMessage('danger', "Erro interno no servidor ao processar exclusão.");
     header('Location: livros.php');
     exit;
 }

@@ -21,7 +21,7 @@ $subPath = getAppSubPath();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - OpenBiblio</title>
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <style>
@@ -98,12 +98,11 @@ $subPath = getAppSubPath();
         </form>
 
         <div class="mt-4 pt-3 border-top text-center text-muted" style="font-size: 0.85rem;">
-            <strong>Credenciais Padrão de Teste:</strong><br>
-            E-mail: <code>admin@openbiblio.local</code> | Senha: <code>Admin@123</code>
+            <i class="bi bi-shield-check text-success me-1"></i> Acesso restrito a operadores e bibliotecários autorizados.
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 </body>
 </html>

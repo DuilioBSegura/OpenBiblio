@@ -56,6 +56,7 @@ if ($exEmprestado['status'] !== 'Disponível') {
 assertTest("TC-04: Tentativa de empréstimo de exemplar indisponível", $bloqueado, "Bloqueou empréstimo de exemplar status '{$exEmprestado['status']}'.");
 
 // TC-06 & TC-07: Empréstimo bem-sucedido e Devolução com Transaction
+$db->exec("DELETE FROM leitores WHERE cpf = '999.888.777-66'");
 $db->beginTransaction();
 try {
     // Inserir leitor de teste
@@ -136,6 +137,7 @@ $db->exec("DELETE FROM devolucoes WHERE emprestimo_id IN (SELECT id FROM emprest
 $db->exec("DELETE FROM emprestimos WHERE livro_id = {$testBookId}");
 $db->exec("DELETE FROM exemplares WHERE livro_id = {$testBookId}");
 $db->exec("DELETE FROM livros WHERE id = {$testBookId}");
+$db->exec("DELETE FROM leitores WHERE cpf = '999.888.777-66'");
 
 echo "\n==================================================\n";
 echo " RESULTADO FINAL DOS TESTES: {$passed} PASSED / {$failed} FAILED\n";

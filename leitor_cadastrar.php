@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         } catch (Exception $e) {
             error_log("Erro ao cadastrar leitor: " . $e->getMessage());
-            $errors[] = 'Erro ao salvar leitor: ' . $e->getMessage();
+            $errors[] = 'Erro interno no servidor ao tentar salvar o cadastro do leitor.';
         }
     }
 }

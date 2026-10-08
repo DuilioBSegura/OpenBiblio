@@ -3,6 +3,7 @@
  * OpenBiblio - Exclusão / Inativação de Leitor
  */
 require_once __DIR__ . '/includes/auth_check.php';
+requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: leitores.php');
