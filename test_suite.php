@@ -2,6 +2,11 @@
 /**
  * OpenBiblio - Suite de Testes de Aceitação Automatizada
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('Acesso permitido apenas via CLI.');
+}
+
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/auth.php';
 
@@ -49,11 +54,9 @@ assertTest("TC-03: Pesquisa por título parametrizada", $countSearch === 1, "Enc
 // TC-04: Tentativa de empréstimo de exemplar já emprestado
 $stmtEmpEx = $db->query("SELECT id, status FROM exemplares WHERE status = 'Emprestado' LIMIT 1");
 $exEmprestado = $stmtEmpEx->fetch();
-$bloqueado = false;
-if ($exEmprestado['status'] !== 'Disponível') {
-    $bloqueado = true;
-}
-assertTest("TC-04: Tentativa de empréstimo de exemplar indisponível", $bloqueado, "Bloqueou empréstimo de exemplar status '{$exEmprestado['status']}'.");
+$bloqueado = $exEmprestado && ($exEmprestado['status'] !== 'Disponível');
+$detalheTc04 = $exEmprestado ? "Bloqueou empréstimo de exemplar status '{$exEmprestado['status']}'." : "Nenhum exemplar emprestado encontrado para testar.";
+assertTest("TC-04: Tentativa de empréstimo de exemplar indisponível", $bloqueado, $detalheTc04);
 
 // TC-06 & TC-07: Empréstimo bem-sucedido e Devolução com Transaction
 $db->exec("DELETE FROM leitores WHERE cpf = '999.888.777-66'");

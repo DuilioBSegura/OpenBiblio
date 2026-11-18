@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirmaSenha = $_POST['confirma_senha'] ?? '';
 
     if (empty($nome)) $errors[] = 'O nome é obrigatório.';
-    if (empty($email)) $errors[] = 'O e-mail é obrigatório.';
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Informe um e-mail válido.';
 
     // Validação de e-mail único para outros usuários
     $stmtEmailCheck = $db->prepare("SELECT id FROM usuarios WHERE email = ? AND id != ? LIMIT 1");
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         } catch (Exception $e) {
             error_log("Erro ao atualizar perfil: " . $e->getMessage());
-            $errors[] = 'Erro ao atualizar dados: ' . $e->getMessage();
+            $errors[] = 'Erro interno no servidor ao tentar atualizar os dados do perfil.';
         }
     }
 }
@@ -110,7 +110,7 @@ include __DIR__ . '/includes/header.php';
     <div class="col-md-4">
         <div class="card-ob text-center p-4">
             <div class="avatar-circle mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
-                <?= strtoupper(substr($userData['nome'], 0, 1)) ?>
+                <?= htmlspecialchars(getAvatarInitial($userData['nome'])) ?>
             </div>
             <h4 class="fw-bold text-navy mb-1"><?= htmlspecialchars($userData['nome']) ?></h4>
             <p class="text-muted mb-2"><?= htmlspecialchars($userData['email']) ?></p>

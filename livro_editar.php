@@ -10,7 +10,7 @@ $pageHeaderTitle = 'Edição de Cadastro de Livro';
 $db = getDBConnection();
 $errors = [];
 
-$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?? filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+$id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT) ?: filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 if (!$id) {
     setFlashMessage('danger', 'ID de livro inválido.');
@@ -54,13 +54,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($titulo)) $errors[] = 'O Título do livro é obrigatório.';
     if (empty($autor)) $errors[] = 'O Autor do livro é obrigatório.';
     if (!$novaQuantidade || $novaQuantidade < 1) $errors[] = 'A quantidade de exemplares deve ser maior ou igual a 1.';
+    if ($ano_publicacao && ($ano_publicacao < 1000 || $ano_publicacao > (date('Y') + 1))) {
+        $errors[] = 'Informe um ano de publicação válido.';
+    }
+    if (!in_array($status, ['Disponível', 'Indisponível'], true)) {
+        $status = 'Disponível';
+    }
 
-    // Validação de ISBN Único para outros livros
+    // Validação de ISBN Único para outros livros (restrição UNIQUE abrange ativos e inativos)
     if (!empty($isbn)) {
-        $stmtIsbn = $db->prepare("SELECT id FROM livros WHERE isbn = ? AND id != ? AND ativo = 1 LIMIT 1");
+        $stmtIsbn = $db->prepare("SELECT id, ativo FROM livros WHERE isbn = ? AND id != ? LIMIT 1");
         $stmtIsbn->execute([$isbn, $id]);
-        if ($stmtIsbn->fetch()) {
-            $errors[] = "O ISBN '{$isbn}' já está em uso por outro livro.";
+        $isbnOutro = $stmtIsbn->fetch();
+        if ($isbnOutro) {
+            $errors[] = (int)$isbnOutro['ativo'] === 1
+                ? "O ISBN '{$isbn}' já está em uso por outro livro."
+                : "O ISBN '{$isbn}' pertence a um livro inativo no histórico.";
         }
     }
 
@@ -90,11 +99,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'O arquivo enviado para a capa não é uma imagem válida.';
             } else {
                 $uploadFileDir = __DIR__ . '/uploads/capas/';
-                if (!is_dir($uploadFileDir)) {
-                    mkdir($uploadFileDir, 0755, true);
+                if (!is_dir($uploadFileDir) && !mkdir($uploadFileDir, 0755, true) && !is_dir($uploadFileDir)) {
+                    $errors[] = 'Não foi possível preparar o diretório de armazenamento de capas.';
+                } else {
+                    $novaCapa = bin2hex(random_bytes(16)) . '.' . $fileExtension;
+                    if (!move_uploaded_file($fileTmpPath, $uploadFileDir . $novaCapa)) {
+                        $errors[] = 'Falha ao salvar a imagem da capa no servidor (verifique permissões de uploads/capas).';
+                    } else {
+                        $nomeCapa = $novaCapa;
+                    }
                 }
-                $nomeCapa = bin2hex(random_bytes(16)) . '.' . $fileExtension;
-                move_uploaded_file($fileTmpPath, $uploadFileDir . $nomeCapa);
             }
         }
     }
@@ -105,12 +119,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Ajustar exemplares se a quantidade mudou
             if ($novaQuantidade > $totalExemplaresReais) {
-                // Adicionar novos exemplares
+                // Adicionar novos exemplares evitando colisão com códigos inativos já existentes
                 $diferenca = $novaQuantidade - $totalExemplaresReais;
+                $stmtTotalHistorico = $db->prepare("SELECT COUNT(*) FROM exemplares WHERE livro_id = ?");
+                $stmtTotalHistorico->execute([$id]);
+                $proxSeq = (int)$stmtTotalHistorico->fetchColumn();
+
+                $stmtCheckCode = $db->prepare("SELECT 1 FROM exemplares WHERE codigo_exemplar = ? LIMIT 1");
                 $stmtInsertEx = $db->prepare("INSERT INTO exemplares (livro_id, codigo_exemplar, status) VALUES (?, ?, 'Disponível')");
                 for ($i = 1; $i <= $diferenca; $i++) {
-                    $proxNum = $totalExemplaresReais + $i;
-                    $codigoEx = sprintf('EX-%05d-%03d', $id, $proxNum);
+                    do {
+                        $proxSeq++;
+                        $codigoEx = sprintf('EX-%05d-%03d', $id, $proxSeq);
+                        $stmtCheckCode->execute([$codigoEx]);
+                    } while ($stmtCheckCode->fetchColumn());
                     $stmtInsertEx->execute([$id, $codigoEx]);
                 }
             } elseif ($novaQuantidade < $totalExemplaresReais) {
@@ -135,6 +157,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtTotalCount->execute([$id]);
             $totaisAtuais = (int)$stmtTotalCount->fetchColumn();
 
+            $statusFinal = ($disponiveisAtuais === 0) ? 'Indisponível' : $status;
+
             // Atualizar registro principal do livro
             $stmtUpdate = $db->prepare("
                 UPDATE livros 
@@ -146,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtUpdate->execute([
                 $titulo, $autor, $isbn ?: null, $editora ?: null, $ano_publicacao ?: null,
                 $categoria ?: null, $descricao ?: null, $nomeCapa, $totaisAtuais,
-                $disponiveisAtuais, $status, $id
+                $disponiveisAtuais, $statusFinal, $id
             ]);
 
             $db->commit();
@@ -241,7 +265,7 @@ include __DIR__ . '/includes/header.php';
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Alterar Capa</label>
-                    <input type="file" name="capa" class="form-control" accept="image/*">
+                    <input type="file" name="capa" class="form-control" accept="image/jpeg,image/png,image/webp">
                 </div>
             </div>
 

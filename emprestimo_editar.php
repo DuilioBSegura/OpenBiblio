@@ -19,7 +19,8 @@ $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 $novaDataDevolucao = trim($_POST['data_prevista_devolucao'] ?? '');
 $observacoes = trim($_POST['observacoes'] ?? '');
 
-if (!$id || empty($novaDataDevolucao)) {
+$dtNova = DateTime::createFromFormat('Y-m-d', $novaDataDevolucao);
+if (!$id || empty($novaDataDevolucao) || !$dtNova || $dtNova->format('Y-m-d') !== $novaDataDevolucao) {
     setFlashMessage('danger', 'Dados inválidos para renovação de empréstimo.');
     header('Location: emprestimos.php');
     exit;

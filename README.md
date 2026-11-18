@@ -14,6 +14,30 @@ Desenvolvido utilizando **PHP 8+ Nativo (com PDO)**, **MySQL/MariaDB** e **Boots
 
 ---
 
+## 🐳 Instalação Rápida com Docker (Recomendado)
+
+1. **Clonar o projeto e configurar variáveis de ambiente:**
+   ```bash
+   cp .env.example .env
+   ```
+   Edite `.env` definindo `DB_PASS` e `DB_ROOT_PASS` seguros.
+
+2. **Subir os containers (PHP 8.2 + Apache e MariaDB 10.11):**
+   ```bash
+   docker compose up -d --build
+   ```
+   Na primeira inicialização, o banco `openbiblio` será criado e populado automaticamente com `database/schema.sql` e `database/seeds.sql`.
+
+3. **Acessar localmente:**
+   `http://localhost:8088` (ou a porta definida em `APP_PORT`).
+
+4. **Executar a suíte de testes dentro do container:**
+   ```bash
+   docker compose exec app php test_suite.php
+   ```
+
+---
+
 ## 🚀 Requisitos de Instalação Local (XAMPP / WAMP / MAMP)
 
 - **Servidor Web:** Apache 2.4+

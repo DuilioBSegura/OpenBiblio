@@ -1,0 +1,12 @@
+# Ambiente local / segredos
+.env
+.env.local
+
+# Capas enviadas por usuários em execução local
+uploads/capas/*
+!uploads/capas/.gitkeep
+
+# Arquivos temporários e de sistema
+*.log
+.DS_Store
+Thumbs.db

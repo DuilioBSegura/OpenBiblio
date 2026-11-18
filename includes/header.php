@@ -48,7 +48,7 @@ $subPath = getAppSubPath();
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
                         <div class="avatar-circle">
-                            <?= strtoupper(substr($user['nome'] ?? 'A', 0, 1)) ?>
+                            <?= htmlspecialchars(getAvatarInitial($user['nome'] ?? 'A')) ?>
                         </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="dropdownUser1">

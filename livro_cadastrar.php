@@ -49,12 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $db = getDBConnection();
 
-    // Validar ISBN único se informado
+    // Validar ISBN único se informado (restrição UNIQUE na tabela abrange ativos e inativos)
     if (!empty($isbn)) {
-        $stmtCheck = $db->prepare("SELECT id FROM livros WHERE isbn = ? AND ativo = 1 LIMIT 1");
+        $stmtCheck = $db->prepare("SELECT id, ativo FROM livros WHERE isbn = ? LIMIT 1");
         $stmtCheck->execute([$isbn]);
-        if ($stmtCheck->fetch()) {
-            $errors[] = "O ISBN '{$isbn}' já está cadastrado em outro livro do acervo.";
+        $isbnExistente = $stmtCheck->fetch();
+        if ($isbnExistente) {
+            $errors[] = (int)$isbnExistente['ativo'] === 1
+                ? "O ISBN '{$isbn}' já está cadastrado em outro livro do acervo."
+                : "O ISBN '{$isbn}' pertence a um livro inativo no histórico e não pode ser reutilizado.";
         }
     }
 
@@ -84,12 +87,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'O arquivo enviado não é uma imagem válida.';
             } else {
                 $uploadFileDir = __DIR__ . '/uploads/capas/';
-                if (!is_dir($uploadFileDir)) {
-                    mkdir($uploadFileDir, 0755, true);
+                if (!is_dir($uploadFileDir) && !mkdir($uploadFileDir, 0755, true) && !is_dir($uploadFileDir)) {
+                    $errors[] = 'Não foi possível preparar o diretório de armazenamento de capas.';
+                } else {
+                    $nomeCapa = bin2hex(random_bytes(16)) . '.' . $fileExtension;
+                    $dest_path = $uploadFileDir . $nomeCapa;
+                    if (!move_uploaded_file($fileTmpPath, $dest_path)) {
+                        $nomeCapa = null;
+                        $errors[] = 'Falha ao salvar a imagem da capa no servidor (verifique permissões de uploads/capas).';
+                    }
                 }
-                $nomeCapa = bin2hex(random_bytes(16)) . '.' . $fileExtension;
-                $dest_path = $uploadFileDir . $nomeCapa;
-                move_uploaded_file($fileTmpPath, $dest_path);
             }
         }
     }

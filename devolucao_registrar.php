@@ -20,8 +20,9 @@ $estado_exemplar = trim($_POST['estado_exemplar'] ?? 'Perfeito estado');
 $observacoes     = trim($_POST['observacoes'] ?? '');
 $usuario_id      = $_SESSION['usuario_id'];
 
-if (!$emprestimo_id) {
-    setFlashMessage('danger', 'ID de empréstimo inválido.');
+$estadosPermitidos = ['Perfeito estado', 'Pequena avaria', 'Danificado', 'Extraviado', 'Em manutenção'];
+if (!$emprestimo_id || !in_array($estado_exemplar, $estadosPermitidos, true)) {
+    setFlashMessage('danger', 'Dados inválidos para registro de devolução.');
     header('Location: emprestimos.php');
     exit;
 }
@@ -69,16 +70,24 @@ try {
     $stmtUpdateEmp = $db->prepare("UPDATE emprestimos SET status = 'Concluído' WHERE id = ?");
     $stmtUpdateEmp->execute([$emprestimo_id]);
 
-    // 5. Alterar Status do Exemplar (Disponível ou Manutenção se avariado)
-    $novoStatusEx = ($estado_exemplar === 'Danificado' || $estado_exemplar === 'Em manutenção') ? 'Manutenção' : 'Disponível';
+    // 5. Alterar Status do Exemplar (Disponível, Manutenção se avariado, ou Inativo se extraviado)
+    $novoStatusEx = match ($estado_exemplar) {
+        'Danificado', 'Em manutenção' => 'Manutenção',
+        'Extraviado' => 'Inativo',
+        default => 'Disponível',
+    };
     $stmtUpdateEx = $db->prepare("UPDATE exemplares SET status = ? WHERE id = ?");
     $stmtUpdateEx->execute([$novoStatusEx, $emp['exemplar_id']]);
 
-    // 6. Incrementar quantidade_disponivel do Livro (se exemplar voltou a ficar disponível)
-    if ($novoStatusEx === 'Disponível') {
-        $stmtUpdateLivro = $db->prepare("UPDATE livros SET quantidade_disponivel = quantidade_disponivel + 1 WHERE id = ?");
-        $stmtUpdateLivro->execute([$emp['livro_id']]);
-    }
+    // 6. Sincronizar estoques e status do Livro a partir dos exemplares reais
+    $stmtUpdateLivro = $db->prepare("
+        UPDATE livros
+        SET quantidade_total = (SELECT COUNT(*) FROM exemplares WHERE livro_id = ? AND status != 'Inativo'),
+            quantidade_disponivel = (SELECT COUNT(*) FROM exemplares WHERE livro_id = ? AND status = 'Disponível'),
+            status = IF((SELECT COUNT(*) FROM exemplares WHERE livro_id = ? AND status = 'Disponível') > 0, 'Disponível', 'Indisponível')
+        WHERE id = ?
+    ");
+    $stmtUpdateLivro->execute([$emp['livro_id'], $emp['livro_id'], $emp['livro_id'], $emp['livro_id']]);
 
     // 7. COMMIT da Transação
     $db->commit();

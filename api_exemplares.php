@@ -2,8 +2,14 @@
 /**
  * OpenBiblio - API Endpoint para Busca de Exemplares Disponíveis de um Livro
  */
-header('Content-Type: application/json');
-require_once __DIR__ . '/includes/auth_check.php';
+require_once __DIR__ . '/config/auth.php';
+header('Content-Type: application/json; charset=utf-8');
+
+if (!isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Sessão expirada ou usuário não autenticado.']);
+    exit;
+}
 
 $livroId = filter_input(INPUT_GET, 'livro_id', FILTER_VALIDATE_INT);
 

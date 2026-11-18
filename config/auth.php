@@ -4,10 +4,15 @@
  * Sistema de Gerenciamento para Bibliotecas Comunitárias
  */
 
-if (session_status() === PHP_SESSION_NONE) {
+date_default_timezone_set(getenv('APP_TIMEZONE') ?: 'America/Sao_Paulo');
+
+if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', '1');
     ini_set('session.use_strict_mode', '1');
-    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+    $forwardedProto = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+        || ($forwardedProto === 'https');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
@@ -21,11 +26,12 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Timeout de inatividade da sessão (30 minutos)
 $sessionTimeout = 1800;
-if (isset($_SESSION['usuario_id']) && isset($_SESSION['last_activity'])) {
+if (PHP_SAPI !== 'cli' && isset($_SESSION['usuario_id']) && isset($_SESSION['last_activity'])) {
     if (time() - $_SESSION['last_activity'] > $sessionTimeout) {
         $_SESSION = [];
         session_destroy();
         session_start();
+        session_regenerate_id(true);
         setFlashMessage('warning', 'Sua sessão expirou por inatividade. Faça login novamente.');
         header('Location: ' . getAppSubPath() . '/auth/login.php');
         exit;
@@ -156,6 +162,40 @@ function sanitize(?string $data): string {
 }
 
 /**
+ * Retorna o IP real do cliente respeitando proxies reversos em rede privada (Caddy/Docker)
+ * 
+ * @return string
+ */
+function getClientIp(): string {
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    $isPrivateProxy = filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+    if ($isPrivateProxy && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $forwardedIps = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
+        if (!empty($forwardedIps[0]) && filter_var($forwardedIps[0], FILTER_VALIDATE_IP)) {
+            return $forwardedIps[0];
+        }
+    }
+    return $remoteAddr;
+}
+
+/**
+ * Retorna a inicial de um nome em UTF-8 para exibição no avatar
+ * 
+ * @param string $name
+ * @return string
+ */
+function getAvatarInitial(string $name): string {
+    $trimmed = trim($name);
+    if ($trimmed === '') {
+        return 'A';
+    }
+    if (function_exists('mb_substr') && function_exists('mb_strtoupper')) {
+        return mb_strtoupper(mb_substr($trimmed, 0, 1, 'UTF-8'), 'UTF-8');
+    }
+    return strtoupper(substr($trimmed, 0, 1));
+}
+
+/**
  * Registra um log de auditoria no banco de dados
  * 
  * @param string $acao
@@ -166,7 +206,7 @@ function auditLog(string $acao, string $detalhes = ''): void {
         $db = getDBConnection();
         $stmt = $db->prepare("INSERT INTO logs_sistema (usuario_id, acao, detalhes, ip) VALUES (?, ?, ?, ?)");
         $userId = $_SESSION['usuario_id'] ?? null;
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $ip = getClientIp();
         $stmt->execute([$userId, $acao, $detalhes, $ip]);
     } catch (Exception $e) {
         error_log("Erro ao gravar log de auditoria: " . $e->getMessage());

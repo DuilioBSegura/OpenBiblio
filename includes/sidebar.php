@@ -61,7 +61,7 @@ $subPath = getAppSubPath();
                 </a>
             </li>
             <li>
-                <a href="<?= $subPath ?>/auth/logout.php" class="text-danger">
+                <a href="<?= $subPath ?>/auth/logout.php?csrf_token=<?= generateCsrfToken() ?>" class="text-danger">
                     <i class="bi bi-box-arrow-right text-danger"></i>
                     <span>Sair</span>
                 </a>

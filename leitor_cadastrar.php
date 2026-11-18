@@ -30,15 +30,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($nome_completo)) {
         $errors[] = 'O Nome Completo é obrigatório.';
     }
+    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Informe um e-mail válido para o leitor.';
+    }
 
     $db = getDBConnection();
 
-    // Validar se CPF já existe no banco (RN-13)
+    // Validar se CPF já existe no banco (RN-13 - restrição UNIQUE abrange ativos e inativos)
     if (!empty($cpf)) {
-        $stmtCpf = $db->prepare("SELECT id FROM leitores WHERE cpf = ? AND ativo = 1 LIMIT 1");
+        $stmtCpf = $db->prepare("SELECT id, ativo FROM leitores WHERE cpf = ? LIMIT 1");
         $stmtCpf->execute([$cpf]);
-        if ($stmtCpf->fetch()) {
-            $errors[] = "O CPF '{$cpf}' já está cadastrado para outro leitor.";
+        $cpfExistente = $stmtCpf->fetch();
+        if ($cpfExistente) {
+            $errors[] = (int)$cpfExistente['ativo'] === 1
+                ? "O CPF '{$cpf}' já está cadastrado para outro leitor."
+                : "O CPF '{$cpf}' pertence a um leitor inativo no sistema. Reative o cadastro anterior ao invés de duplicar.";
         }
     }
 

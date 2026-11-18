@@ -11,7 +11,7 @@ $db = getDBConnection();
 
 // Queries para Indicadores (Cards)
 $totalLivros = (int) $db->query("SELECT COUNT(*) FROM livros WHERE ativo = 1")->fetchColumn();
-$totalExemplares = (int) $db->query("SELECT COUNT(*) FROM exemplares")->fetchColumn();
+$totalExemplares = (int) $db->query("SELECT COUNT(*) FROM exemplares WHERE status != 'Inativo'")->fetchColumn();
 $exemplaresDisponiveis = (int) $db->query("SELECT COUNT(*) FROM exemplares WHERE status = 'Disponível'")->fetchColumn();
 $exemplaresEmprestados = (int) $db->query("SELECT COUNT(*) FROM exemplares WHERE status = 'Emprestado'")->fetchColumn();
 $leitoresAtivos = (int) $db->query("SELECT COUNT(*) FROM leitores WHERE ativo = 1")->fetchColumn();
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: ['Disponíveis', 'Emprestados', 'Atrasados'],
             datasets: [{
-                data: [<?= $exemplaresDisponiveis ?>, <?= $exemplaresEmprestados - $emprestimosAtrasados ?>, <?= $emprestimosAtrasados ?>],
+                data: [<?= $exemplaresDisponiveis ?>, <?= max(0, $exemplaresEmprestados - $emprestimosAtrasados) ?>, <?= $emprestimosAtrasados ?>],
                 backgroundColor: ['#10b981', '#3b82f6', '#ef4444'],
                 borderWidth: 2,
                 borderColor: '#ffffff'

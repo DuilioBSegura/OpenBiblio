@@ -7,15 +7,42 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    # Bloquear qualquer tentativa de acesso ao diretório .git ou subdiretórios
+    # Bloquear qualquer tentativa de acesso ao diretório .git ou subdiretórios ocultos
     RewriteRule (^|/)\. - [F,L]
+    # Bloquear acesso direto a diretórios internos da aplicação
+    RewriteRule ^(config|database|docker|docs|includes)(/|$) - [F,L]
 </IfModule>
 
 # 2. Impedir acesso a arquivos e pastas sensíveis
-<FilesMatch "(^\.|\.(sql|log|md|bak|config|env))$">
-    Order allow,deny
-    Deny from all
+<FilesMatch "(^\.|\.(sql|log|md|bak|config|env|yml|yaml|example))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
+
+<Files "Dockerfile">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+<Files "test_suite.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
 
 # 3. Headers de Segurança HTTP (OWASP Recommended)
 <IfModule mod_headers.c>
@@ -31,8 +58,8 @@ Options -Indexes
     # Restrição de APIs de hardware desnecessárias
     Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
 
-    # Content Security Policy (permite assets locais e CDNs do Bootstrap/Chart.js)
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self';"
+    # Content Security Policy (permite assets locais, CDNs do Bootstrap/Chart.js e Google Fonts)
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self';"
 
     # Remover cabeçalho de tecnologia do servidor
     Header unset X-Powered-By

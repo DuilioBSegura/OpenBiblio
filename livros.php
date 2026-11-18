@@ -29,9 +29,10 @@ if (!empty($busca)) {
     $params[] = is_numeric($busca) ? (int)$busca : 0;
 }
 
-if (!empty($statusFiltro)) {
-    $where[] = "b.status = ?";
-    $params[] = $statusFiltro;
+if ($statusFiltro === 'Disponível') {
+    $where[] = "EXISTS (SELECT 1 FROM exemplares ex WHERE ex.livro_id = b.id AND ex.status = 'Disponível')";
+} elseif ($statusFiltro === 'Indisponível') {
+    $where[] = "NOT EXISTS (SELECT 1 FROM exemplares ex WHERE ex.livro_id = b.id AND ex.status = 'Disponível')";
 }
 
 $whereSql = implode(" AND ", $where);

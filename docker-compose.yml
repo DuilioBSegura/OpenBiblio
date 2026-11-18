@@ -1,0 +1,63 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: openbiblio-db
+    restart: unless-stopped
+    environment:
+      TZ: ${APP_TIMEZONE:-America/Sao_Paulo}
+      MYSQL_DATABASE: ${DB_NAME:-openbiblio}
+      MYSQL_USER: ${DB_USER:-openbiblio}
+      MYSQL_PASSWORD: ${DB_PASS:-openbiblio_secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-openbiblio_root_secret}
+    volumes:
+      - openbiblio_db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seeds.sql:/docker-entrypoint-initdb.d/02-seeds.sql:ro
+    networks:
+      - openbiblio_net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openbiblio-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${APP_TIMEZONE:-America/Sao_Paulo}
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/Sao_Paulo}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-openbiblio}
+      DB_USER: ${DB_USER:-openbiblio}
+      DB_PASS: ${DB_PASS:-openbiblio_secret}
+      DB_CHARSET: utf8mb4
+    ports:
+      - "127.0.0.1:${APP_PORT:-8088}:80"
+    volumes:
+      - openbiblio_uploads:/var/www/html/uploads/capas
+    networks:
+      - openbiblio_net
+    # Se o seu Caddy rodar DENTRO de outro container Docker (ao invés de rodar no host),
+    # adicione a rede externa do Caddy abaixo e no bloco top-level `networks:`:
+    #   - caddy_net
+
+networks:
+  openbiblio_net:
+    driver: bridge
+  # caddy_net:
+  #   external: true
+
+volumes:
+  openbiblio_db_data:
+  openbiblio_uploads:

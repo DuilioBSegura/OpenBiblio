@@ -10,7 +10,7 @@ $pageHeaderTitle = 'Edição de Leitor';
 $db = getDBConnection();
 $errors = [];
 
-$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?? filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+$id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT) ?: filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 if (!$id) {
     setFlashMessage('danger', 'ID de leitor inválido.');
@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ativo         = isset($_POST['ativo']) ? 1 : 0;
 
     if (empty($nome_completo)) $errors[] = 'O Nome Completo é obrigatório.';
+    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Informe um e-mail válido.';
 
     if (!empty($cpf)) {
         $stmtCpf = $db->prepare("SELECT id FROM leitores WHERE cpf = ? AND id != ? LIMIT 1");

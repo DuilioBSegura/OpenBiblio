@@ -29,6 +29,19 @@ if (!$leitor_id || !$livro_id || !$exemplar_id || empty($data_emprestimo) || emp
     exit;
 }
 
+$dtEmp = DateTime::createFromFormat('Y-m-d', $data_emprestimo);
+$dtPrev = DateTime::createFromFormat('Y-m-d', $data_prevista_devolucao);
+if (!$dtEmp || $dtEmp->format('Y-m-d') !== $data_emprestimo || !$dtPrev || $dtPrev->format('Y-m-d') !== $data_prevista_devolucao) {
+    setFlashMessage('danger', 'Informe datas válidas para o empréstimo e a devolução.');
+    header('Location: emprestimo_novo.php');
+    exit;
+}
+if ($dtPrev < $dtEmp) {
+    setFlashMessage('danger', 'A data prevista de devolução não pode ser anterior à data do empréstimo.');
+    header('Location: emprestimo_novo.php');
+    exit;
+}
+
 $db = getDBConnection();
 
 try {
@@ -65,13 +78,14 @@ try {
         throw new Exception("O exemplar código {$exemplar['codigo_exemplar']} não está disponível para empréstimo (Status atual: {$exemplar['status']}).");
     }
 
-    // 3. Verificar se o Livro possui quantidade_disponivel > 0
-    $stmtLivro = $db->prepare("SELECT id, titulo, quantidade_disponivel FROM livros WHERE id = ? FOR UPDATE");
+    // 3. Verificar se o Livro está ativo e possui quantidade_disponivel > 0
+    $stmtLivro = $db->prepare("SELECT id, titulo, quantidade_disponivel, ativo FROM livros WHERE id = ? FOR UPDATE");
     $stmtLivro->execute([$livro_id]);
     $livro = $stmtLivro->fetch();
 
-    if (!$livro || $livro['quantidade_disponivel'] <= 0) {
-        throw new Exception("O livro '{$livro['titulo']}' não possui exemplares disponíveis em estoque.");
+    if (!$livro || (int)$livro['ativo'] !== 1 || $livro['quantidade_disponivel'] <= 0) {
+        $tituloErro = $livro ? $livro['titulo'] : "#{$livro_id}";
+        throw new Exception("O livro '{$tituloErro}' não possui exemplares disponíveis em estoque.");
     }
 
     // 4. Inserir Registro de Empréstimo
@@ -94,9 +108,14 @@ try {
     $stmtUpdateEx = $db->prepare("UPDATE exemplares SET status = 'Emprestado' WHERE id = ?");
     $stmtUpdateEx->execute([$exemplar_id]);
 
-    // 6. Atualizar quantidade_disponivel do Livro
-    $stmtUpdateLivro = $db->prepare("UPDATE livros SET quantidade_disponivel = GREATEST(0, quantidade_disponivel - 1) WHERE id = ?");
-    $stmtUpdateLivro->execute([$livro_id]);
+    // 6. Sincronizar quantidade_disponivel e status do Livro
+    $stmtUpdateLivro = $db->prepare("
+        UPDATE livros
+        SET quantidade_disponivel = (SELECT COUNT(*) FROM exemplares WHERE livro_id = ? AND status = 'Disponível'),
+            status = IF((SELECT COUNT(*) FROM exemplares WHERE livro_id = ? AND status = 'Disponível') > 0, 'Disponível', 'Indisponível')
+        WHERE id = ?
+    ");
+    $stmtUpdateLivro->execute([$livro_id, $livro_id, $livro_id]);
 
     // Commit da Transação
     $db->commit();

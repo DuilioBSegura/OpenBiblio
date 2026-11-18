@@ -50,9 +50,14 @@ try {
     $stmtUpdateEx = $db->prepare("UPDATE exemplares SET status = 'Disponível' WHERE id = ?");
     $stmtUpdateEx->execute([$emp['exemplar_id']]);
 
-    // 4. Incrementar quantidade_disponivel do livro
-    $stmtUpdateLivro = $db->prepare("UPDATE livros SET quantidade_disponivel = quantidade_disponivel + 1 WHERE id = ?");
-    $stmtUpdateLivro->execute([$emp['livro_id']]);
+    // 4. Sincronizar quantidade_disponivel e status do livro
+    $stmtUpdateLivro = $db->prepare("
+        UPDATE livros
+        SET quantidade_disponivel = (SELECT COUNT(*) FROM exemplares WHERE livro_id = ? AND status = 'Disponível'),
+            status = IF((SELECT COUNT(*) FROM exemplares WHERE livro_id = ? AND status = 'Disponível') > 0, 'Disponível', 'Indisponível')
+        WHERE id = ?
+    ");
+    $stmtUpdateLivro->execute([$emp['livro_id'], $emp['livro_id'], $emp['livro_id']]);
 
     $db->commit();
     auditLog('EMPRESTIMO_CANCELADO', "Empréstimo ID {$id} foi cancelado administrativamente.");

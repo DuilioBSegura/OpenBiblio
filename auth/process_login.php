@@ -29,7 +29,7 @@ try {
     $db = getDBConnection();
 
     // 1. Verificação de Bloqueio por Força Bruta (Rate Limiting)
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    $ip = getClientIp();
     $timeLimitMinutes = 15;
     $maxAttempts = 5;
 
@@ -38,9 +38,9 @@ try {
         FROM logs_sistema 
         WHERE acao = 'LOGIN_FALHA' 
           AND (ip = ? OR detalhes LIKE ?) 
-          AND criado_em >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+          AND criado_em >= DATE_SUB(NOW(), INTERVAL {$timeLimitMinutes} MINUTE)
     ");
-    $stmtThrottle->execute([$ip, "%{$email}%", $timeLimitMinutes]);
+    $stmtThrottle->execute([$ip, "%{$email}%"]);
     $failedAttempts = (int) $stmtThrottle->fetchColumn();
 
     if ($failedAttempts >= $maxAttempts) {
